@@ -1,18 +1,23 @@
 import os
 import yt_dlp
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ApplicationBuilder, MessageHandler, CommandHandler, CallbackQueryHandler, filters, ContextTypes
+from telegram.ext import ApplicationBuilder, MessageHandler, CommandHandler, CallbackQueryHandler, filters
 
+# 🔑 احصل على التوكن من Environment Variables في Render
 TOKEN = os.getenv("TOKEN")
+
 DOWNLOAD_FOLDER = "downloads"
 os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 
+# لتخزين اسم الأغنية مؤقتًا لكل مستخدم
 user_queries = {}
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("🎧 أرسل اسم الأغنية")
+# /start
+async def start(update: Update, context):
+    await update.message.reply_text("🎧 أرسل اسم الأغنية التي تريد تحميلها:")
 
-async def search(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# استقبال نص المستخدم (اسم الأغنية)
+async def search(update: Update, context):
     query = update.message.text
     user_queries[update.message.chat_id] = query
 
@@ -26,7 +31,8 @@ async def search(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
-async def download(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# التعامل مع الأزرار (اختيار الجودة)
+async def download(update: Update, context):
     query = update.callback_query
     await query.answer()
 
@@ -60,11 +66,13 @@ async def download(update: Update, context: ContextTypes.DEFAULT_TYPE):
             performer=entry.get('uploader')
         )
 
+        # حذف الملف بعد الإرسال لتوفير المساحة
         os.remove(file_path)
 
     except Exception as e:
-        await query.message.reply_text("❌ حدث خطأ")
+        await query.message.reply_text(f"❌ حدث خطأ: {e}")
 
+# إعداد التطبيق
 app = ApplicationBuilder().token(TOKEN).build()
 
 app.add_handler(CommandHandler("start", start))
